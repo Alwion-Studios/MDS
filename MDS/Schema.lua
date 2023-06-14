@@ -15,7 +15,7 @@ local packages = RS.Packages
 local Janitor = require(packages.Janitor)
 
 --Settings
-local config = require(script.Parent)
+local config = require(script.Parent.Settings)
 
 --Database
 local DS = game:GetService("DataStoreService")
@@ -120,7 +120,7 @@ function DataSchema:SetDefaultData(defaultValue)
 
         local toStoreIn
 
-        if not game:GetService("ServerStorage")[self.Player.UserId] then
+        if not game:GetService("ServerStorage"):FindFirstChild(self.Player.UserId) then
             toStoreIn = Instance.new("Folder")
             toStoreIn.Parent = game:GetService("ServerStorage")
             toStoreIn.Name = self.Player.UserId
@@ -142,6 +142,8 @@ function DataSchema:SetDefaultData(defaultValue)
         end
 
         for name, value in pairs(data) do
+            if name == "Version" then continue end
+
             local valueInst
 
             if typeof(value) == "number" then
@@ -150,6 +152,8 @@ function DataSchema:SetDefaultData(defaultValue)
                 valueInst = createValue("StringValue", name, value)
             elseif typeof(value) == "boolean" then
                 valueInst = createValue("BoolValue", name, value)
+            else
+                continue
             end
 
             valueInst.Changed:Connect(function(newVal)
@@ -168,6 +172,13 @@ function DataSchema:Save()
     print("Saving ".. self.Player.Name.. "'s ".. self.Name .."!")
 
     local success, err = pcall(function()
+        local existingData = self.DataStore:GetAsync(self.Player.UserId)
+
+        if self.Data == existingData then 
+            warn("This data is no different to what has been stored currently. Not saving!")
+            return false 
+        end
+
         self.Data["Version"] = (self.Data["Version"]+1) or (self.Version+1) or 1
 
         local function updateHandler(oldData)
@@ -190,6 +201,10 @@ function DataSchema:Save()
 end
 
 function DataSchema:Destroy()
+    if game:GetService("ServerStorage"):FindFirstChild(self.Player.UserId) then
+        game:GetService("ServerStorage"):FindFirstChild(self.Player.UserId):Destroy()
+    end
+    
     self = nil
 end
 
