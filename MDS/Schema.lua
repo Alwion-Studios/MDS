@@ -14,6 +14,9 @@ local RS = game:GetService("ReplicatedStorage")
 local packages = RS.Packages
 local Janitor = require(packages.Janitor)
 
+--Settings
+local config = require(script.Parent)
+
 --Database
 local DS = game:GetService("DataStoreService")
 
@@ -110,6 +113,49 @@ function DataSchema:SetDefaultData(defaultValue)
         end
     else
         self:SetData(defaultValue)
+    end
+
+    if config["CreateInstanceValues"] and self:GetName() then
+        local data = self:GetAllData()
+
+        local toStoreIn
+
+        if not game:GetService("ServerStorage")[self.Player.UserId] then
+            toStoreIn = Instance.new("Folder")
+            toStoreIn.Parent = game:GetService("ServerStorage")
+            toStoreIn.Name = self.Player.UserId
+        else
+            toStoreIn = game:GetService("ServerStorage")[self.Player.UserId]
+        end
+
+        local function createValue(use, name, value)
+            local newValue = Instance.new(use)
+            newValue.Name = name
+            newValue.Value = value
+            newValue.Parent = toStoreIn
+
+            return newValue
+        end
+
+        local function onChange(newVal, Inst)
+            self:InsertData(Inst.name, newVal)
+        end
+
+        for name, value in pairs(data) do
+            local valueInst
+
+            if typeof(value) == "number" then
+                valueInst = createValue("NumberValue", name, value)
+            elseif typeof(value) == "string" then
+                valueInst = createValue("StringValue", name, value)
+            elseif typeof(value) == "boolean" then
+                valueInst = createValue("BoolValue", name, value)
+            end
+
+            valueInst.Changed:Connect(function(newVal)
+                onChange(newVal, valueInst)
+            end)
+        end
     end
 end
 
