@@ -10,6 +10,11 @@ Contact me at xMellylicious#0001 if any issues arise.
 
 ]]
 --Imports
+local RS = game:GetService("ReplicatedStorage")
+local packages = RS.Packages
+local Janitor = require(packages.Janitor)
+
+--Database
 local DS = game:GetService("DataStoreService")
 
 --Main Object
@@ -19,6 +24,7 @@ DataSchema.__index = DataSchema
 function DataSchema.New()
     local self = {}
 
+    self.Janitor = Janitor.new()
     self.Name = nil
     self.Player = nil
     self.Data = {}
@@ -95,8 +101,6 @@ function DataSchema:SetDefaultData(defaultValue)
         self:SetData(data)
 
         if data["Version"] then self.Version = data["Version"] else self:InsertData("Version", 1) self.Version = data["Version"] end
-        
-        print(self.Version)
 
         for defaultName, value in pairs(defaultValue) do
             if not self.Data[defaultName] then
