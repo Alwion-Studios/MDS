@@ -83,6 +83,8 @@ function DataSchema:SetData(value)
     --if typeof(value) ~= "table" then return warn("This value needs to be a table!") end
 
     self.Data = value
+    
+    return true
 end
 
 function DataSchema:InsertData(name, value: table)
@@ -90,6 +92,12 @@ function DataSchema:InsertData(name, value: table)
     if not value then return warn("A value needs to be declared to set any data") end
 
     self.Data[name] = value
+    return true
+end
+
+function DataSchema:SetDataToStore()
+    self.DataStore:SetAsync(self.Player.UserId, self.Data)
+    return true
 end
 
 function DataSchema:SetDefaultData(defaultValue)
@@ -98,9 +106,9 @@ function DataSchema:SetDefaultData(defaultValue)
     if not self.Player then return warn("Before using this, a player value needs to be declared!") end
 
     local data = self.DataStore:GetAsync(self.Player.UserId)
-
+    
     if data ~= nil then
-        warn("User already has set data! Will be loading predefined information!")
+        warn("User already has set data! Will be fetching predefined information!")
         self:SetData(data)
 
         if data["Version"] then self.Version = data["Version"] else self:InsertData("Version", 1) self.Version = data["Version"] end
@@ -113,6 +121,7 @@ function DataSchema:SetDefaultData(defaultValue)
         end
     else
         self:SetData(defaultValue)
+        self:SetDataToStore()
     end
 
     if config["CreateInstanceValues"] and self:GetName() then
@@ -137,10 +146,6 @@ function DataSchema:SetDefaultData(defaultValue)
             return newValue
         end
 
-        local function onChange(newVal, Inst)
-            self:InsertData(Inst.name, newVal)
-        end
-
         for name, value in pairs(data) do
             if name == "Version" then continue end
 
@@ -157,7 +162,7 @@ function DataSchema:SetDefaultData(defaultValue)
             end
 
             valueInst.Changed:Connect(function(newVal)
-                onChange(newVal, valueInst)
+                self:InsertData(valueInst.name, newVal)
             end)
         end
     end
@@ -172,13 +177,6 @@ function DataSchema:Save()
     print("Saving ".. self.Player.Name.. "'s ".. self.Name .."!")
 
     local success, err = pcall(function()
-        local existingData = self.DataStore:GetAsync(self.Player.UserId)
-
-        if self.Data == existingData then 
-            warn("This data is no different to what has been stored currently. Not saving!")
-            return false 
-        end
-
         self.Data["Version"] = (self.Data["Version"]+1) or (self.Version+1) or 1
 
         local function updateHandler(oldData)
