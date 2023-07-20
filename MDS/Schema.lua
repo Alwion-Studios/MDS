@@ -91,7 +91,13 @@ function DataSchema:InsertData(name, value: table)
     if not name then return warn("A name needs to be declared to set any data") end
     if not value then return warn("A value needs to be declared to set any data") end
 
+    print("Inserting Data ".. name.. " ".. value)
     self.Data[name] = value
+
+    if self.Player["PlayerData"]:FindFirstChild(name) then
+        self.Player["PlayerData"][name].Value = value
+    end
+
     return true
 end
 
@@ -129,12 +135,12 @@ function DataSchema:SetDefaultData(defaultValue)
 
         local toStoreIn
 
-        if not game:GetService("ServerStorage"):FindFirstChild(self.Player.UserId) then
+        if not self.Player:FindFirstChild("PlayerData") then
             toStoreIn = Instance.new("Folder")
-            toStoreIn.Parent = game:GetService("ServerStorage")
-            toStoreIn.Name = self.Player.UserId
+            toStoreIn.Parent = self.Player
+            toStoreIn.Name = "PlayerData"
         else
-            toStoreIn = game:GetService("ServerStorage")[self.Player.UserId]
+            toStoreIn = self.Player["PlayerData"]
         end
 
         local function createValue(use, name, value)
